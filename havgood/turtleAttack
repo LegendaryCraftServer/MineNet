@@ -1,0 +1,56 @@
+local continue = false
+local CHANNEL = 1
+local master = 444
+
+function emptyTurtle()
+  turtle.turnLeft()
+  turtle.turnLeft()
+  for i = 1,16 do
+  turtle.select(i)
+	turtle.drop()
+  end
+  turtle.turnLeft()
+  turtle.turnLeft()
+end
+ 
+function attack() 
+	local timeout = 20
+	print('Starting_attack')
+	emptyTurtle()
+	while continue == true do
+		turtle.attack()
+		sleep(0.5)
+		if timeout == 0 then
+			emptyTurtle()
+			timeout = 20
+		end
+		timeout = timeout - 1
+	end
+end
+
+function sendStatus(channel)
+	
+end
+
+function waitForStop()
+	while true do 
+		local event, side, chan, replyChan, message, distance = os.pullEvent('modem_message')
+		if replyChan == master and message == 'stop' then
+			sleep(60)
+			continue = false
+			break;
+		end
+	end	
+end
+
+local modem = peripheral.wrap('right')
+
+modem.open(1)
+while true do
+	local event, side, chan, replyChan, message, distance = os.pullEvent('modem_message')
+	if replyChan == master and message == 'go' then
+		continue = true
+		parallel.waitForAll(waitForStop, attack)
+	end
+end
+modem.close(1)
