@@ -1,4 +1,4 @@
-os.loadAPI('api/buttons')
+os.loadAPI('apis/buttons')
 local modem = peripheral.wrap('right')
 local master = os.getComputerID()
 local CHANNEL = 1
