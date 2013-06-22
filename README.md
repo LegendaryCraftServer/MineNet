@@ -1,7 +1,7 @@
 MineNet
 =======
 
-Modules proposés :lolilolol;ol
+Modules proposés :
 
     Rfid
     
