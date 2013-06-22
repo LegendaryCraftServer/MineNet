@@ -2,7 +2,7 @@ local m = peripheral.wrap('top')
 local w, h = m.getSize()
 
 function ln()
-  local x, y = m.getCursorPos()
+	local x, y = m.getCursorPos()
 	m.setCursorPos(1, y + 1)
 end
 
@@ -18,7 +18,7 @@ while true do
 	l = #result
 	
 	
-	for i = l-4, l do
+	for i = 1, 4 do
 		local v = result[i]
 		m.write(string.rep('-', w-5), k)
 		ln()
