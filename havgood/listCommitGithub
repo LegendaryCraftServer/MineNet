@@ -1,0 +1,34 @@
+local m = peripheral.wrap('top')
+local w, h = m.getSize()
+
+function ln()
+  local x, y = m.getCursorPos()
+	m.setCursorPos(1, y + 1)
+end
+
+while true do
+	local message = http.get('https://api.github.com/repos/LegendaryCraftServer/MineNet/commits')
+	local text = message.readAll()
+	print(text)
+	local result = json.decode(text)
+
+	m.clear()
+	m.setCursorPos(1, 1)
+	
+	l = #result
+	
+	
+	for i = l-4, l do
+		local v = result[i]
+		m.write(string.rep('-', w-5), k)
+		ln()
+		m.write(v.commit.message)
+		ln()
+		m.write(' by '..v.commit.committer.name)
+		ln()
+		m.write(' at '..v.commit.committer.date)	
+		ln()
+		ln()
+	end
+	sleep(20)
+end
