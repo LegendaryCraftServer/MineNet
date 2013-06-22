@@ -1,0 +1,6 @@
+print("MineNet inc, copyright(r)")
+
+while true do
+turtle.attack()
+end
+
