@@ -1,0 +1,105 @@
+os.loadAPI('api/buttons')
+local modem = peripheral.wrap('right')
+local master = os.getComputerID()
+local CHANNEL = 1
+ 
+function setBundled(active, side, color)
+  local state = rs.getBundledOutput(side)
+  if  active == true then
+  rs.setBundledOutput(side,
+	  colors.combine(state, color))
+  else
+	rs.setBundledOutput(side,
+	  colors.subtract(state, color))
+  end
+end
+ 
+function testTransmitter(side, color)
+  local state = rs.getBundledOutput(side)
+  return colors.test(state, color)
+end
+ 
+function blaze (name, button)
+  setBundled(button.active, 'right', colors.blue)
+  if  button.active == true then
+	buttons.moveButton('xpWither', 0, 4)
+	buttons.moveButton('killWither', 0, 4)
+    buttons.moveButton('wither', 0, 4)
+	buttons.showButton('xpBlaze')
+	buttons.showButton('killBlaze')
+  else 
+	buttons.hideButton('xpBlaze')
+	buttons.hideButton('killBlaze')
+	buttons.moveButton('wither', 0, -4)
+	buttons.moveButton('xpWither', 0, -4)
+	buttons.moveButton('killWither', 0, -4)
+  end
+end
+ 
+function wither (name, button)
+  setBundled(button.active, 'right', colors.red)
+  if  button.active == true then
+	buttons.showButton('xpWither')
+	buttons.showButton('killWither')
+  else 
+	buttons.hideButton('xpWither')
+	buttons.hideButton('killWither')
+  end
+end
+
+function transmit(status, msg_on, msg_off)
+	if status == true then
+		modem.transmit(CHANNEL, master, msg_on)
+	else
+		modem.transmit(CHANNEL, master, msg_off)
+	end
+end
+
+function xpBlaze (name, button)
+	transmit(button.active, 'go_xpBlaze', 'stop_xpBlaze')
+end
+
+function killBlaze (name, button)
+	transmit(button.active, 'go_killBlaze', 'stop_killBlaze')
+end
+
+function xpWither (name, button)
+	transmit(button.active, 'go_xpWither', 'stop_xpWither')
+end
+
+function killWither (name, button)
+	transmit(button.active, 'go_killWither', 'stop_killWither')
+end
+ 
+buttons.addButton('blaze', 'blaze', blaze, 'top', 3, 13, 4, 3)
+buttons.addButton('wither', 'wither', wither, 'top', 3, 13, 8, 3)
+buttons.addButton('xpBlaze', 'xp', xpBlaze, 'top', 3, 4, 8, 3, nil, nil, nil, nil, false, true)
+buttons.addButton('killBlaze', 'kill', killBlaze, 'top', 8, 8, 8, 3, nil, nil, nil, nil, false, true)
+buttons.addButton('xpWither', 'xp', xpWither, 'top', 3, 4, 12, 3, nil, nil, nil, nil, false, true)
+buttons.addButton('killWither', 'kill', killWither, 'top', 8, 8, 12, 3, nil, nil, nil, nil, false, true)
+
+ 
+m = peripheral.wrap('top')
+m.setBackgroundColor(colors.black)
+m.setTextColor(colors.white)
+m.clear()
+m.setCursorPos(1,1)
+ 
+setBundled(false, 'right', colors.blue)
+setBundled(false, 'right', colors.red)
+ 
+buttons.drawButton('blaze')
+buttons.drawButton('wither')
+if testTransmitter('right', colors.blue) == true then
+  buttons.toggle('blaze')
+end
+ 
+if testTransmitter('right', colors.red) == true then
+  buttons.toggle('wither')
+end
+ 
+while true do
+  e, s, x, y = os.pullEvent('monitor_touch')
+  buttons.fire(s, x, y)
+end
+
