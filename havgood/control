@@ -1,0 +1,213 @@
+os.loadAPI('apis/buttons')
+local modem = peripheral.wrap('bottom')
+local master = os.getComputerID()
+local CHANNEL = 1
+local m, width, height
+local timeOutTimer
+
+local turtles = {}
+
+function ifelse(cond, t, f)
+  if cond == true then
+		return t
+	end
+	return f
+end
+
+function initMonitor()
+	m = peripheral.wrap('top')
+	m.setBackgroundColor(colors.black)
+	m.setTextColor(colors.white)
+	m.clear()
+	m.setCursorPos(1,1)
+	width, height = m.getSize()
+end
+
+function addTurtle(name, id, cb)
+	turtles[name] = {}
+	turtles[name]['id'] = id
+	turtles[name]['current'] = false
+	turtles[name]['active'] = false
+	turtles[name]['refresh'] = cb
+end
+ 
+function setBundled(active, side, color)
+  local state = rs.getBundledOutput(side)
+  if  active == true then
+	rs.setBundledOutput(side,
+	  colors.combine(state, color))
+  else
+	rs.setBundledOutput(side,
+	  colors.subtract(state, color))
+  end
+end
+ 
+function testTransmitter(side, color)
+  local state = rs.getBundledOutput(side)
+  return colors.test(state, color)
+end
+ 
+function blaze (name, button)
+  setBundled(button.active, 'right', colors.blue)
+end
+ 
+function wither (name, button)
+  setBundled(button.active, 'right', colors.red)
+end
+
+function transmit(status, msg_on, msg_off)
+	if status == true then
+		modem.transmit(CHANNEL, master, msg_on)
+	else
+		modem.transmit(CHANNEL, master, msg_off)
+	end
+end
+
+function xpBlaze (name, button)
+	transmit(button.active, 'go_xpBlaze', 'stop_xpBlaze')
+end
+
+function killBlaze (name, button)
+	transmit(button.active, 'go_killBlaze', 'stop_killBlaze')
+end
+
+function xpWither (name, button)
+	transmit(button.active, 'go_xpWither', 'stop_xpWither')
+end
+
+function killWither (name, button)
+	transmit(button.active, 'go_killWither', 'stop_killWither')
+end
+
+function queryStatus(name)
+	local event, side, chan, replyChan, message, distance
+	m.setCursorPos(1, height)
+	m.write(string.rep(' ', width))
+	m.setCursorPos(1, height)
+	m.write('Querying : '..name)
+	modem.transmit(CHANNEL, master, 'status_'..turtles[name].id)
+	modem.open(master)
+	local timer = os.startTimer(3)
+	print('timer: ', timer)
+	while not (event == 'modem_message' or 
+		(event == 'timer' and side == timer)) do
+		event, side, chan, replyChan, message, distance = os.pullEvent()
+		print('     eventALL: ', event, ' ,', side, ' ,',  chan)
+--		if event == 'monitor_touch' then
+--			buttons.fire(side, chan, replyChan)
+--		end
+	end
+	turtles[name].current = false
+print('     event: ', event, ' ,', replyChan, ', ', turtles[name].id)
+	if event == 'modem_message' then
+		if replyChan == turtles[name].id then
+			local msg = textutils.unserialize(message)
+			turtles[name].current = msg.running
+		end
+	end
+	turtles[name].refresh(name)
+	modem.close(master)
+	m.setCursorPos(1, height)
+	m.write(string.rep(' ', width))
+end
+
+
+function queryAll()
+	local timer = os.startTimer(20)
+	local e, p1, p2, p3
+	while true do
+		while p1 ~= timer do
+			e, p1, p2, p3 = os.pullEvent('timer')
+		end
+		
+		for k, v in pairs(turtles) do
+print(k)		
+				queryStatus(k)
+		end
+		timer = os.startTimer(20)
+	end
+end
+
+function printTurtleStatus(x, y, name)
+	local len = string.len(name)
+	local color = ifelse(turtles[name].current, colors.green, colors.red)
+	local text  = ifelse(turtles[name].current, 'on ', 'off')
+	m.setCursorPos(x, y)
+	m.write(name)
+	m.setBackgroundColor(color)
+	m.setCursorPos(x + len + 2, y)
+	m.write(text)
+	m.setBackgroundColor(colors.black)
+end
+
+function refreshTurtlesWither(name)
+	printTurtleStatus(18, 12, 'killWither01')
+	printTurtleStatus(18, 13, 'killWither02')
+	printTurtleStatus(18, 14, 'killWither03')
+	printTurtleStatus(18, 15, 'killWither04')
+	printTurtleStatus(18, 16, 'killWither05')
+	printTurtleStatus(18, 17, 'killWither06')
+	printTurtleStatus(18, 18, 'killWither07')
+	printTurtleStatus(18, 19, 'xpWither')
+end
+
+function refreshTurtlesBlaze(name)
+	printTurtleStatus(18, 3, 'killBlaze01')
+	printTurtleStatus(18, 4, 'killBlaze02')
+	printTurtleStatus(18, 5, 'killBlaze03')
+	printTurtleStatus(18, 6, 'killBlaze04')
+	printTurtleStatus(18, 7, 'killBlaze05')
+	printTurtleStatus(18, 8, 'killBlaze06')
+	printTurtleStatus(18, 9, 'killBlaze07')
+	printTurtleStatus(18, 10, 'xpBlaze')
+end
+
+addTurtle('xpWither', 1, refreshTurtlesWither)
+addTurtle('killWither01', 0, refreshTurtlesWither)
+addTurtle('killWither02', 2, refreshTurtlesWither)
+addTurtle('killWither03', 4, refreshTurtlesWither)
+addTurtle('killWither04', 5, refreshTurtlesWither)
+addTurtle('killWither05', 6, refreshTurtlesWither)
+addTurtle('killWither06', 7, refreshTurtlesWither)
+addTurtle('killWither07', 8, refreshTurtlesWither)
+
+addTurtle('xpBlaze', 1, refreshTurtlesBlaze)
+addTurtle('killBlaze01', 0, refreshTurtlesBlaze)
+addTurtle('killBlaze02', 2, refreshTurtlesBlaze)
+addTurtle('killBlaze03', 4, refreshTurtlesBlaze)
+addTurtle('killBlaze04', 5, refreshTurtlesBlaze)
+addTurtle('killBlaze05', 6, refreshTurtlesBlaze)
+addTurtle('killBlaze06', 7, refreshTurtlesBlaze)
+addTurtle('killBlaze07', 8, refreshTurtlesBlaze)
+
+ 
+ 
+buttons.addButton('blaze', 'blaze', blaze, 'top', 3, 13, 4, 3)
+buttons.addButton('wither', 'wither', wither, 'top', 3, 13, 12, 3)
+buttons.addButton('xpBlaze', 'xp', xpBlaze, 'top', 3, 4, 8, 3)
+buttons.addButton('killBlaze', 'kill', killBlaze, 'top', 8, 8, 8, 3)
+buttons.addButton('xpWither', 'xp', xpWither, 'top', 3, 4, 16, 3)
+buttons.addButton('killWither', 'kill', killWither, 'top', 8, 8, 16, 3)
+ 
+setBundled(false, 'right', colors.blue)
+setBundled(false, 'right', colors.red)
+ 
+initMonitor();
+buttons.drawButton('blaze')
+buttons.drawButton('wither')
+buttons.drawButton('xpBlaze')
+buttons.drawButton('killBlaze')
+buttons.drawButton('xpWither')
+buttons.drawButton('killWither')
+if testTransmitter('right', colors.blue) == true then
+  buttons.toggle('blaze')
+end
+ 
+if testTransmitter('right', colors.red) == true then
+  buttons.toggle('wither')
+end
+ 
+while true do
+	parallel.waitForAll(buttons.listenMonitors, queryAll)
+end
+
