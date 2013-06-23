@@ -1,0 +1,99 @@
+
+local e = peripheral.wrap('left')
+local enchantSlot = 1
+local bookSlot = 16
+local levelMax = 30
+local continue = false
+local ID = os.getComputerID()
+local CHANNEL = 1
+local master = 3
+
+local modem = peripheral.wrap('right')
+ 
+function getLevels()
+  return e.getLevels()
+end
+ 
+function enchantIt(slot)
+  local qte = turtle.getItemCount(slot)
+  local levels = getLevels()
+  if qte == 1 and levels >= levelMax then
+  turtle.select(slot)
+	e.enchant(levelMax)
+  end
+end
+ 
+function isEnchantSlotDispo(slot)
+  return turtle.getItemCount(slot) == 0
+end
+ 
+function isEnoughtBook(slot)
+  return turtle.getItemCount(slot) > 1
+end
+ 
+function getBook(src, dst)
+  if isEnchantSlotDispo(dst)
+	and isEnoughtBook(src) then
+	turtle.select(src)
+	turtle.transferTo(dst, 1)
+  end
+end
+
+function enchant() 
+	local levels = getLevels()
+	e.setAutoCollect(true)
+	while continue == true do
+		if not isEnoughtBook(bookSlot) then
+			print("Not Enought Book !!!")
+		end
+		if getLevels() ~= levels then
+			levels = getLevels()
+			print("Levels : ", levels)
+		end
+		if levels > levelMax then
+			getBook(bookSlot, enchantSlot)
+			enchantIt(enchantSlot)
+			sleep(1)
+			turtle.select(enchantSlot)
+			turtle.dropDown()
+		end
+		sleep(5)
+	end
+	e.setAutoCollect(false)
+end
+
+function sendStatus(channel)
+	local status = {}
+	print('sending status')
+	sleep(1)
+	status['running'] = continue
+	modem.transmit(channel, ID, textutils.serialize(status))
+end
+
+function waitForStop()
+	while true do 
+		local event, side, chan, replyChan, message, distance = os.pullEvent('modem_message')
+print('message : ', message)	
+		if replyChan == master and message == 'stop_xpWither' then
+			continue = false
+			break;
+		end
+		if replyChan == master and message == 'status_'..ID then		
+			sendStatus(replyChan)
+		end
+	end	
+end
+
+modem.open(CHANNEL)
+while true do
+	local event, side, chan, replyChan, message, distance = os.pullEvent('modem_message')
+	if replyChan == master and message == 'go_xpWither' then
+		continue = true
+		parallel.waitForAll(waitForStop, enchant)
+	end
+	if replyChan == master and message == 'status_'..ID then
+		sendStatus(replyChan)
+	end
+end
+modem.close(CHANNEL)
+
