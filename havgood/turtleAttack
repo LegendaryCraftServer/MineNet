@@ -1,12 +1,14 @@
 local continue = false
+local ID = os.getComputerID()
 local CHANNEL = 1
-local master = 444
+local master = 3
+local modem = peripheral.wrap('right')
 
 function emptyTurtle()
   turtle.turnLeft()
   turtle.turnLeft()
   for i = 1,16 do
-  turtle.select(i)
+	turtle.select(i)
 	turtle.drop()
   end
   turtle.turnLeft()
@@ -14,43 +16,51 @@ function emptyTurtle()
 end
  
 function attack() 
-	local timeout = 20
+	local timeout = 0
 	print('Starting_attack')
-	emptyTurtle()
-	while continue == true do
-		turtle.attack()
-		sleep(0.5)
+	while continue == true do				
 		if timeout == 0 then
 			emptyTurtle()
 			timeout = 20
 		end
+		turtle.attack()
 		timeout = timeout - 1
+		sleep(0.5)
 	end
 end
+
 
 function sendStatus(channel)
-	
+	local status = {}	
+	sleep(1)
+	status['running'] = continue	
+	print('sending status', ',',  ID, ', ', textutils.serialize(status))
+	modem.transmit(channel, ID, textutils.serialize(status))
 end
 
-function waitForStop()
+function waitForOrder()	
 	while true do 
 		local event, side, chan, replyChan, message, distance = os.pullEvent('modem_message')
-		if replyChan == master and message == 'stop' then
-			sleep(60)
+print('message : ', message)	
+		if replyChan == master and message == 'stop_killWither' then
 			continue = false
-			break;
+			break
 		end
-	end	
+		if replyChan == master and message == 'status_'..ID then		
+			sendStatus(replyChan)
+		end
+	end		
 end
-
-local modem = peripheral.wrap('right')
 
 modem.open(1)
-while true do
+while true do 
 	local event, side, chan, replyChan, message, distance = os.pullEvent('modem_message')
-	if replyChan == master and message == 'go' then
+	if replyChan == master and message == 'go_killWither' then
 		continue = true
-		parallel.waitForAll(waitForStop, attack)
+		parallel.waitForAll(waitForOrder, attack)
 	end
-end
+	if replyChan == master and message == 'status_'..ID then		
+		sendStatus(replyChan)
+	end
+end 
 modem.close(1)
